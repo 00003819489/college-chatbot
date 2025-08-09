@@ -25,9 +25,14 @@ function formatTimetable(timetable) {
   return html;
 }
 
+// Normalize day input to match keys: First letter uppercase rest lowercase
+function normalizeDay(day) {
+  day = day.trim().toLowerCase();
+  return day.charAt(0).toUpperCase() + day.slice(1);
+}
+
 function getTimetable(day, batch = "ECE_A") {
-  // Normalize day string - first letter uppercase rest lowercase
-  const normDay = day.charAt(0).toUpperCase() + day.slice(1).toLowerCase();
+  const normDay = normalizeDay(day);
 
   if (
     !collegeData.timetables.S3 ||
@@ -42,35 +47,43 @@ function getTimetable(day, batch = "ECE_A") {
   )}`;
 }
 
+function getTimings(day, batch = "ECE_A") {
+  const normDay = normalizeDay(day);
+  if (
+    !collegeData.timetables.S3 ||
+    !collegeData.timetables.S3[batch] ||
+    !collegeData.timetables.S3[batch][normDay]
+  ) {
+    return `No timings found for ${normDay} in ${batch}.`;
+  }
+  const timetable = collegeData.timetables.S3[batch][normDay];
+  let timings = timetable
+    .map(
+      (entry) =>
+        `${entry.periods || entry.period || ""}: ${entry.time || "N/A"}`
+    )
+    .join("\n");
+  return `<strong>⏰ Timings for ${normDay} (${batch}):</strong><br><pre>${timings}</pre>`;
+}
+
 function processInput(text) {
   const msg = text.toLowerCase().trim();
 
-  // Default batch
+  // Determine batch: default ECE_A, or CSB if mentioned
   let batch = "ECE_A";
   if (msg.includes("csb")) batch = "CSB";
 
-  // Days array
+  // Days array for matching
   const days = ["monday", "tuesday", "wednesday", "thursday", "friday"];
 
-  // Check for day query
+  // Check if any day is mentioned in the input
   for (const day of days) {
     if (msg.includes(day)) {
-      // If user asks for timing specifically
+      // Check if user wants timings specifically
       if (msg.includes("time") || msg.includes("timing")) {
-        const normDay = day.charAt(0).toUpperCase() + day.slice(1);
-        const timetable = collegeData.timetables.S3[batch][normDay];
-        if (!timetable)
-          return `No timetable found for ${normDay} in ${batch}.`;
-
-        let timings = timetable
-          .map(
-            (entry) =>
-              `${entry.periods || entry.period || ""}: ${entry.time || "N/A"}`
-          )
-          .join("\n");
-        return `<strong>⏰ Timings for ${normDay} (${batch}):</strong><br><pre>${timings}</pre>`;
+        return getTimings(day, batch);
       }
-      // Regular timetable
+      // Otherwise, show timetable
       return getTimetable(day, batch);
     }
   }
@@ -111,3 +124,7 @@ function sendMessage() {
   }, 500);
 }
 
+sendBtn.addEventListener("click", sendMessage);
+userInput.addEventListener("keydown", (e) => {
+  if (e.key === "Enter") sendMessage();
+});
