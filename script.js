@@ -1,10 +1,28 @@
-function addMessage(message, sender) {
+function addMessage(message, sender, isHTML = false) {
   const chatBox = document.getElementById("chat-box");
   const msgDiv = document.createElement("div");
   msgDiv.classList.add("message", sender);
-  msgDiv.textContent = message;
+  if (isHTML) msgDiv.innerHTML = message;
+  else msgDiv.textContent = message;
   chatBox.appendChild(msgDiv);
   chatBox.scrollTop = chatBox.scrollHeight;
+}
+
+function formatTimetableTable(timetable) {
+  let html = `<table>
+    <thead><tr><th>Period(s)</th><th>Subject</th><th>Time</th></tr></thead><tbody>`;
+  timetable.forEach(entry => {
+    let periods = entry.periods || entry.period || "";
+    let subject = entry.subject;
+    // If lab with batches info, show both batches separated
+    if (entry.batch1 && entry.batch2) {
+      subject += `<br/><small><em>${entry.batch1} / ${entry.batch2}</em></small>`;
+    }
+    let time = entry.time || "-";
+    html += `<tr><td>${periods}</td><td>${subject}</td><td>${time}</td></tr>`;
+  });
+  html += `</tbody></table>`;
+  return html;
 }
 
 function getTimetable(day, batch = "ECE_A") {
@@ -12,18 +30,7 @@ function getTimetable(day, batch = "ECE_A") {
   if (!timetable) {
     return `No timetable found for ${day} in ${batch}.`;
   }
-  let response = `Timetable for ${day} (${batch}):\n`;
-  timetable.forEach(entry => {
-    if (entry.periods) {
-      response += `Periods ${entry.periods}: ${entry.subject}`;
-      if (entry.time) response += ` (${entry.time})`;
-    } else if (entry.period) {
-      response += `Period ${entry.period}: ${entry.subject}`;
-      if (entry.time) response += ` (${entry.time})`;
-    }
-    response += '\n';
-  });
-  return response.trim();
+  return `<strong>📅 Timetable for ${day} (${batch}):</strong>${formatTimetableTable(timetable)}`;
 }
 
 function getTimings(day, batch = "ECE_A") {
@@ -31,28 +38,34 @@ function getTimings(day, batch = "ECE_A") {
   if (!timetable) {
     return `No timetable found for ${day} in ${batch}.`;
   }
-  let times = `Period timings for ${day} (${batch}):\n`;
+  let html = `<strong>⏰ Period timings for ${day} (${batch}):</strong><ul>`;
   timetable.forEach(entry => {
-    if (entry.periods) {
-      times += `Periods ${entry.periods}: ${entry.time || "Timing not available"}\n`;
-    } else if (entry.period) {
-      times += `Period ${entry.period}: ${entry.time || "Timing not available"}\n`;
-    }
+    const periods = entry.periods || entry.period || "";
+    html += `<li><strong>${periods}</strong>: ${entry.time || "Timing not available"}</li>`;
   });
-  return times.trim();
+  html += "</ul>";
+  return html;
 }
 
 function getHOD(dept) {
-  return collegeData.hods[dept] || `Sorry, I don't have HOD info for ${dept}.`;
+  const hod = collegeData.hods[dept];
+  if (!hod) return `Sorry, I don't have HOD info for ${dept}.`;
+  return `<strong>Head of Department - ${dept}:</strong> ${hod}`;
 }
 
 function getAcademicEvents() {
   const events = collegeData.academic_calendar.Odd_Semester_2025;
-  let response = "Upcoming Academic Events:\n";
+  let html = `<strong>📅 Upcoming Academic Events:</strong><ul>`;
   events.forEach(ev => {
-    response += `${ev.date} (${ev.day}): ${ev.event}\n`;
+    html += `<li><strong>${ev.date} (${ev.day.substring(0, 3)})</strong>: ${ev.event}</li>`;
   });
-  return response;
+  html += "</ul>";
+  return html;
+}
+
+function getExamDates() {
+  // Placeholder if exam_dates is empty
+  return "Exam dates are not available yet.";
 }
 
 function processMessage(msg) {
@@ -65,7 +78,6 @@ function processMessage(msg) {
 
   const days = ["monday", "tuesday", "wednesday", "thursday", "friday"];
 
-  // Check if user wants only timings
   if (msg.includes("timing") || msg.includes("time slots") || msg.includes("period times")) {
     for (const day of days) {
       if (msg.includes(day)) {
@@ -74,14 +86,12 @@ function processMessage(msg) {
     }
   }
 
-  // Timetable query for days
   for (const day of days) {
     if (msg.includes(day)) {
       return getTimetable(day.charAt(0).toUpperCase() + day.slice(1), batch);
     }
   }
 
-  // HOD queries
   if (msg.includes("hod")) {
     if (msg.includes("ece")) return getHOD("ECE");
     if (msg.includes("cse") || msg.includes("cs")) return getHOD("CSE");
@@ -89,17 +99,14 @@ function processMessage(msg) {
     return "Please specify department (ECE, CSE, EEE) for HOD info.";
   }
 
-  // Academic calendar query
   if (msg.includes("academic") || msg.includes("calendar") || msg.includes("events")) {
     return getAcademicEvents();
   }
 
-  // Exam dates query (empty for now)
   if (msg.includes("exam")) {
-    return "Exam dates are not available yet.";
+    return getExamDates();
   }
 
-  // Default reply
   return "Hi! Ask me about your timetable (ECE_A or CSB), HODs, academic calendar, or exams. How can I help?";
 }
 
@@ -113,7 +120,9 @@ function sendMessage() {
 
   setTimeout(() => {
     const reply = processMessage(userText);
-    addMessage(reply, "bot");
+    // If reply contains HTML tags, send as HTML, else plain text
+    const isHTML = /<\/?[a-z][\s\S]*>/i.test(reply);
+    addMessage(reply, "bot", isHTML);
   }, 500);
 }
 
