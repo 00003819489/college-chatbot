@@ -13,22 +13,25 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function formatTimetable(timetable) {
-    let html = `<table>
-      <thead><tr><th>Period(s)</th><th>Subject</th><th>Time</th></tr></thead><tbody>`;
-    timetable.forEach((entry) => {
-      let periodLabel = "";
-      if (entry.periods) periodLabel = `Periods: ${entry.periods}`;
-      else if (entry.period) periodLabel = `Period: ${entry.period}`;
+  let html = `<table>
+    <thead><tr><th>Period(s)</th><th>Subject</th><th>Time</th></tr></thead><tbody>`;
+  timetable.forEach((entry) => {
+    let periodLabel = "";
+    if (entry.periods) periodLabel = `Periods: ${entry.periods}`;
+    else if (entry.period) periodLabel = `Period: ${entry.period}`;
 
-      let subject = entry.subject || "Unknown Subject";
-      if (entry.batch1 && entry.batch2)
-        subject += `<br><small><em>${entry.batch1} / ${entry.batch2}</em></small>`;
+    // Use entry.subject or fallback to "Unknown Subject"
+    let subject = entry.subject ? entry.subject : "Unknown Subject";
 
-      html += `<tr><td>${periodLabel}</td><td>${subject}</td><td>${entry.time}</td></tr>`;
-    });
-    html += "</tbody></table>";
-    return html;
-  }
+    if (entry.batch1 && entry.batch2)
+      subject += `<br><small><em>${entry.batch1} / ${entry.batch2}</em></small>`;
+
+    html += `<tr><td>${periodLabel}</td><td>${subject}</td><td>${entry.time || "N/A"}</td></tr>`;
+  });
+  html += "</tbody></table>";
+  return html;
+}
+
 
   function normalizeDay(day) {
     day = day.trim().toLowerCase();
@@ -142,3 +145,4 @@ document.addEventListener("DOMContentLoaded", () => {
     "bot"
   );
 });
+
