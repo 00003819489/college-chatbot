@@ -51,24 +51,30 @@ document.addEventListener("DOMContentLoaded", () => {
     )}`;
   }
 
-  function getTimings(day, batch = "ECE_A") {
-    const normDay = normalizeDay(day);
-    if (
-      !collegeData.timetables.S3 ||
-      !collegeData.timetables.S3[batch] ||
-      !collegeData.timetables.S3[batch][normDay]
-    ) {
-      return `No timings found for ${normDay} in ${batch}.`;
-    }
-    const timetable = collegeData.timetables.S3[batch][normDay];
-    let timings = timetable
-      .map(
-        (entry) =>
-          `${entry.periods || entry.period || ""}: ${entry.time || "N/A"}`
-      )
-      .join("\n");
-    return `<strong>⏰ Timings for ${normDay} (${batch}):</strong><br><pre>${timings}</pre>`;
+function getTimings(day, batch = "ECE_A") {
+  const normDay = normalizeDay(day);
+  if (
+    !collegeData.timetables.S3 ||
+    !collegeData.timetables.S3[batch] ||
+    !collegeData.timetables.S3[batch][normDay]
+  ) {
+    return `No timings found for ${normDay} in ${batch}.`;
   }
+  const timetable = collegeData.timetables.S3[batch][normDay];
+  let timings = timetable
+    .map((entry) => {
+      const periodLabel = entry.periods
+        ? `Periods: ${entry.periods}`
+        : entry.period
+        ? `Period: ${entry.period}`
+        : "";
+      const subject = entry.subject || "Unknown Subject";
+      const time = entry.time || "N/A";
+      return `${periodLabel} — ${subject} — ${time}`;
+    })
+    .join("\n");
+  return `<strong>⏰ Timings for ${normDay} (${batch}):</strong><br><pre>${timings}</pre>`;
+}
 
   function processInput(text) {
     const msg = text.toLowerCase().trim();
@@ -113,3 +119,4 @@ document.addEventListener("DOMContentLoaded", () => {
     const text = userInput.value.trim();
     if (!text) return;
    
+
