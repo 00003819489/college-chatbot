@@ -1,95 +1,99 @@
-const chatBox = document.getElementById("chat-box");
-const userInput = document.getElementById("user-input");
-const sendBtn = document.getElementById("send-btn");
-
-// Add message to chat window
-function addMessage(text, sender) {
+// This handles user message and chatbot response
+function addMessage(message, sender) {
+  const chatBox = document.getElementById("chat-box");
   const msgDiv = document.createElement("div");
   msgDiv.classList.add("message", sender);
-  msgDiv.textContent = text;
+  msgDiv.textContent = message;
   chatBox.appendChild(msgDiv);
   chatBox.scrollTop = chatBox.scrollHeight;
 }
 
-// Get timetable for a day
-function getTimetable(day) {
-  const timetable = collegeData.timetables.S3.ECE_A[day];
+function getTimetable(day, batch = "ECE_A") {
+  const timetable = collegeData.timetables.S3[batch][day];
   if (!timetable) {
-    return `No timetable found for ${day}.`;
+    return `No timetable found for ${day} in ${batch}.`;
   }
-  let response = `Timetable for ${day}:\n`;
+  let response = `Timetable for ${day} (${batch}):\n`;
   timetable.forEach(entry => {
     if (entry.periods) {
       response += `Periods ${entry.periods}: ${entry.subject}`;
-      if (entry.batch1 && entry.batch2) {
-        response += ` (Batch 1: ${entry.batch1}, Batch 2: ${entry.batch2})`;
-      }
+      if (entry.time) response += ` (${entry.time})`;
     } else if (entry.period) {
       response += `Period ${entry.period}: ${entry.subject}`;
+      if (entry.time) response += ` (${entry.time})`;
     }
     response += '\n';
   });
   return response.trim();
 }
 
-// Process user message and respond
+function getHOD(dept) {
+  return collegeData.hods[dept] || `Sorry, I don't have HOD info for ${dept}.`;
+}
+
+function getAcademicEvents() {
+  const events = collegeData.academic_calendar.Odd_Semester_2025;
+  let response = "Upcoming Academic Events:\n";
+  events.forEach(ev => {
+    response += `${ev.date} (${ev.day}): ${ev.event}\n`;
+  });
+  return response;
+}
+
 function processMessage(msg) {
   msg = msg.toLowerCase();
 
-  // Timetable query
+  // Batch detection: Default to ECE_A
+  let batch = "ECE_A";
+  if (msg.includes("csb")) batch = "CSB";
+  else if (msg.includes("ece a") || msg.includes("eca")) batch = "ECE_A";
+
+  // Timetable query for days
   const days = ["monday", "tuesday", "wednesday", "thursday", "friday"];
   for (const day of days) {
     if (msg.includes(day)) {
-      return getTimetable(day.charAt(0).toUpperCase() + day.slice(1));
+      return getTimetable(day.charAt(0).toUpperCase() + day.slice(1), batch);
     }
   }
 
   // HOD queries
-  if (msg.includes("hod") || msg.includes("head of department")) {
-    if (msg.includes("ece")) return `HOD of ECE: ${collegeData.hods.ECE}`;
-    if (msg.includes("cse")) return `HOD of CSE: ${collegeData.hods.CSE}`;
-    if (msg.includes("eee")) return `HOD of EEE: ${collegeData.hods.EEE}`;
-    return "Please specify the department (ECE, CSE, or EEE) to know the HOD.";
+  if (msg.includes("hod")) {
+    if (msg.includes("ece")) return getHOD("ECE");
+    if (msg.includes("cse") || msg.includes("cs")) return getHOD("CSE");
+    if (msg.includes("eee")) return getHOD("EEE");
+    return "Please specify department (ECE, CSE, EEE) for HOD info.";
   }
 
-  // Academic calendar queries
-  if (msg.includes("academic calendar") || msg.includes("events")) {
-    let eventsList = collegeData.academic_calendar
-      .filter(e => e.semesters.includes("S3"))
-      .map(e => `${e.date} (${e.day}): ${e.event}`)
-      .join('\n');
-    return `Upcoming academic events for S3:\n${eventsList}`;
+  // Academic calendar query
+  if (msg.includes("academic") || msg.includes("calendar") || msg.includes("events")) {
+    return getAcademicEvents();
   }
 
-  // Exam dates queries
-  if (msg.includes("exam") || msg.includes("examination") || msg.includes("test")) {
-    let examsList = collegeData.exam_dates
-      .filter(e => e.semesters.includes("S3"))
-      .map(e => {
-        if (e.start_date) return `${e.exam} starts on ${e.start_date}`;
-        if (e.last_date) return `${e.exam} to be completed by ${e.last_date}`;
-        return e.exam;
-      })
-      .join('\n');
-    return `Upcoming exams for S3:\n${examsList}`;
+  // Exam dates query (empty for now)
+  if (msg.includes("exam")) {
+    return "Exam dates are not available yet.";
   }
 
-  return "Hey! Feel free to ask me anything about your timetable, HODs, exams, or college events. What’s on your mind?";
+  // Default reply
+  return "Hi! Ask me about your timetable (ECE_A or CSB), HODs, academic calendar, or exams. How can I help?";
 }
 
-// Event listeners for sending messages
-sendBtn.addEventListener("click", () => {
-  const msg = userInput.value.trim();
-  if (!msg) return;
-  addMessage(msg, "user");
-  userInput.value = "";
-  const reply = processMessage(msg);
-  addMessage(reply, "bot");
-});
+function sendMessage() {
+  const inputBox = document.getElementById("user-input");
+  const userText = inputBox.value.trim();
+  if (!userText) return;
 
-userInput.addEventListener("keydown", (e) => {
-  if (e.key === "Enter") {
-    e.preventDefault();
-    sendBtn.click();
-  }
+  addMessage(userText, "user");
+  inputBox.value = "";
+
+  // Simulate bot typing delay
+  setTimeout(() => {
+    const reply = processMessage(userText);
+    addMessage(reply, "bot");
+  }, 500);
+}
+
+document.getElementById("send-btn").addEventListener("click", sendMessage);
+document.getElementById("user-input").addEventListener("keydown", e => {
+  if (e.key === "Enter") sendMessage();
 });
