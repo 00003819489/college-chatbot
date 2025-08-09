@@ -1,4 +1,3 @@
-// This handles user message and chatbot response
 function addMessage(message, sender) {
   const chatBox = document.getElementById("chat-box");
   const msgDiv = document.createElement("div");
@@ -27,6 +26,22 @@ function getTimetable(day, batch = "ECE_A") {
   return response.trim();
 }
 
+function getTimings(day, batch = "ECE_A") {
+  const timetable = collegeData.timetables.S3[batch][day];
+  if (!timetable) {
+    return `No timetable found for ${day} in ${batch}.`;
+  }
+  let times = `Period timings for ${day} (${batch}):\n`;
+  timetable.forEach(entry => {
+    if (entry.periods) {
+      times += `Periods ${entry.periods}: ${entry.time || "Timing not available"}\n`;
+    } else if (entry.period) {
+      times += `Period ${entry.period}: ${entry.time || "Timing not available"}\n`;
+    }
+  });
+  return times.trim();
+}
+
 function getHOD(dept) {
   return collegeData.hods[dept] || `Sorry, I don't have HOD info for ${dept}.`;
 }
@@ -48,8 +63,18 @@ function processMessage(msg) {
   if (msg.includes("csb")) batch = "CSB";
   else if (msg.includes("ece a") || msg.includes("eca")) batch = "ECE_A";
 
-  // Timetable query for days
   const days = ["monday", "tuesday", "wednesday", "thursday", "friday"];
+
+  // Check if user wants only timings
+  if (msg.includes("timing") || msg.includes("time slots") || msg.includes("period times")) {
+    for (const day of days) {
+      if (msg.includes(day)) {
+        return getTimings(day.charAt(0).toUpperCase() + day.slice(1), batch);
+      }
+    }
+  }
+
+  // Timetable query for days
   for (const day of days) {
     if (msg.includes(day)) {
       return getTimetable(day.charAt(0).toUpperCase() + day.slice(1), batch);
@@ -86,7 +111,6 @@ function sendMessage() {
   addMessage(userText, "user");
   inputBox.value = "";
 
-  // Simulate bot typing delay
   setTimeout(() => {
     const reply = processMessage(userText);
     addMessage(reply, "bot");
