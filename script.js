@@ -128,3 +128,13 @@ sendBtn.addEventListener("click", sendMessage);
 userInput.addEventListener("keydown", (e) => {
   if (e.key === "Enter") sendMessage();
 });
+sendBtn.addEventListener("click", sendMessage);
+
+userInput.addEventListener("keydown", (e) => {
+  if (e.key === "Enter") {
+    e.preventDefault();  // prevent form submit if any
+    sendMessage();
+  }
+});
+
+
