@@ -1,86 +1,113 @@
-function addMessage(message, sender, isHTML = false) {
-  const chatBox = document.getElementById("chat-box");
-  const msgDiv = document.createElement("div");
-  msgDiv.classList.add("message", sender);
-  if (isHTML) msgDiv.innerHTML = message;
-  else msgDiv.textContent = message;
-  chatBox.appendChild(msgDiv);
+const chatBox = document.getElementById("chat-box");
+const userInput = document.getElementById("user-input");
+const sendBtn = document.getElementById("send-btn");
+
+function addMessage(msg, sender, isHTML = false) {
+  const div = document.createElement("div");
+  div.classList.add("message", sender);
+  if (isHTML) div.innerHTML = msg;
+  else div.textContent = msg;
+  chatBox.appendChild(div);
   chatBox.scrollTop = chatBox.scrollHeight;
 }
 
-function formatTimetableTable(timetable) {
+function formatTimetable(timetable) {
   let html = `<table>
     <thead><tr><th>Period(s)</th><th>Subject</th><th>Time</th></tr></thead><tbody>`;
-  timetable.forEach(entry => {
-    let periods = entry.periods || entry.period || "";
+  timetable.forEach((entry) => {
+    const periods = entry.periods || entry.period || "";
     let subject = entry.subject;
-    if (entry.batch1 && entry.batch2) {
-      subject += `<br/><small><em>${entry.batch1} / ${entry.batch2}</em></small>`;
-    }
-    let time = entry.time || "-";
-    html += `<tr><td>${periods}</td><td>${subject}</td><td>${time}</td></tr>`;
+    if (entry.batch1 && entry.batch2)
+      subject += `<br><small><em>${entry.batch1} / ${entry.batch2}</em></small>`;
+    html += `<tr><td>${periods}</td><td>${subject}</td><td>${entry.time}</td></tr>`;
   });
-  html += `</tbody></table>`;
+  html += "</tbody></table>";
   return html;
 }
 
 function getTimetable(day, batch = "ECE_A") {
-  const timetable = collegeData.timetables.S3[batch][day];
-  if (!timetable) {
-    return `No timetable found for ${day} in ${batch}.`;
+  // Normalize day string - first letter uppercase rest lowercase
+  const normDay = day.charAt(0).toUpperCase() + day.slice(1).toLowerCase();
+
+  if (
+    !collegeData.timetables.S3 ||
+    !collegeData.timetables.S3[batch] ||
+    !collegeData.timetables.S3[batch][normDay]
+  ) {
+    return `No timetable found for ${normDay} in ${batch}.`;
   }
-  return `<strong>📅 Timetable for ${day} (${batch}):</strong>${formatTimetableTable(timetable)}`;
+  const timetable = collegeData.timetables.S3[batch][normDay];
+  return `<strong>📅 Timetable for ${normDay} (${batch}):</strong>${formatTimetable(
+    timetable
+  )}`;
 }
 
-function getTimings(day, batch = "ECE_A") {
-  const timetable = collegeData.timetables.S3[batch][day];
-  if (!timetable) {
-    return `No timetable found for ${day} in ${batch}.`;
-  }
-  let html = `<strong>⏰ Period timings for ${day} (${batch}):</strong><ul>`;
-  timetable.forEach(entry => {
-    const periods = entry.periods || entry.period || "";
-    html += `<li><strong>${periods}</strong>: ${entry.time || "Timing not available"}</li>`;
-  });
-  html += "</ul>";
-  return html;
-}
+function processInput(text) {
+  const msg = text.toLowerCase().trim();
 
-function getHOD(dept) {
-  const hod = collegeData.hods[dept];
-  if (!hod) return `Sorry, I don't have HOD info for ${dept}.`;
-  return `<strong>Head of Department - ${dept}:</strong> ${hod}`;
-}
-
-function getAcademicEvents() {
-  const events = collegeData.academic_calendar.Odd_Semester_2025;
-  let html = `<strong>📅 Upcoming Academic Events:</strong><ul>`;
-  events.forEach(ev => {
-    html += `<li><strong>${ev.date} (${ev.day.substring(0, 3)})</strong>: ${ev.event}</li>`;
-  });
-  html += "</ul>";
-  return html;
-}
-
-function getExamDates() {
-  if (!collegeData.exam_dates || Object.keys(collegeData.exam_dates).length === 0) {
-    return "Exam dates are not available yet.";
-  }
-  // Add logic here if exam dates exist
-  return "Exam dates data coming soon!";
-}
-
-function processMessage(msg) {
-  msg = msg.toLowerCase();
-
-  // Batch detection: Default to ECE_A
+  // Default batch
   let batch = "ECE_A";
   if (msg.includes("csb")) batch = "CSB";
-  else if (msg.includes("ece a") || msg.includes("eca")) batch = "ECE_A";
 
+  // Days array
   const days = ["monday", "tuesday", "wednesday", "thursday", "friday"];
 
-  if (msg.includes("timing") || msg.includes("time slots") || msg.includes("period times")) {
-    for (const day of days) {
-      if (msg.includes(day)) {
-        return getTimings(day.charAt(0).toUpperCase()
+  // Check for day query
+  for (const day of days) {
+    if (msg.includes(day)) {
+      // If user asks for timing specifically
+      if (msg.includes("time") || msg.includes("timing")) {
+        const normDay = day.charAt(0).toUpperCase() + day.slice(1);
+        const timetable = collegeData.timetables.S3[batch][normDay];
+        if (!timetable)
+          return `No timetable found for ${normDay} in ${batch}.`;
+
+        let timings = timetable
+          .map(
+            (entry) =>
+              `${entry.periods || entry.period || ""}: ${entry.time || "N/A"}`
+          )
+          .join("\n");
+        return `<strong>⏰ Timings for ${normDay} (${batch}):</strong><br><pre>${timings}</pre>`;
+      }
+      // Regular timetable
+      return getTimetable(day, batch);
+    }
+  }
+
+  // HOD queries
+  if (msg.includes("hod")) {
+    if (msg.includes("ece")) return `HOD of ECE: ${collegeData.hods.ECE}`;
+    if (msg.includes("cse")) return `HOD of CSE: ${collegeData.hods.CSE}`;
+    if (msg.includes("eee")) return `HOD of EEE: ${collegeData.hods.EEE}`;
+    return "Please specify the department for HOD info (ECE, CSE, EEE).";
+  }
+
+  // Academic calendar query
+  if (msg.includes("academic calendar") || msg.includes("calendar")) {
+    const events = collegeData.academic_calendar?.Odd_Semester_2025;
+    if (!events) return "No academic calendar data available.";
+    let list = events
+      .map(
+        (ev) =>
+          `<li><b>${ev.date} (${ev.day.substring(0, 3)})</b>: ${ev.event}</li>`
+      )
+      .join("");
+    return `<strong>📅 Academic Calendar Events:</strong><ul>${list}</ul>`;
+  }
+
+  return "Sorry, I didn't understand that. Try asking about your timetable, HOD, or academic calendar.";
+}
+
+function sendMessage() {
+  const text = userInput.value.trim();
+  if (!text) return;
+  addMessage(text, "user");
+  userInput.value = "";
+
+  setTimeout(() => {
+    const reply = processInput(text);
+    addMessage(reply, "bot", true);
+  }, 500);
+}
+
