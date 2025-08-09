@@ -1,27 +1,360 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>College Chatbot</title>
-  <link rel="stylesheet" href="style.css" />
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>College Chatbot</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    background: #f0f2f5;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+  }
+  #chat-container {
+    width: 400px;
+    height: 600px;
+    background: white;
+    box-shadow: 0 0 10px rgba(0,0,0,0.2);
+    display: flex;
+    flex-direction: column;
+    border-radius: 8px;
+  }
+  header {
+    padding: 15px;
+    background: #0055a5;
+    color: white;
+    font-weight: bold;
+    font-size: 18px;
+    text-align: center;
+    border-radius: 8px 8px 0 0;
+  }
+  #chat-box {
+    flex: 1;
+    padding: 15px;
+    overflow-y: auto;
+    background: #fafafa;
+    font-size: 14px;
+  }
+  .message {
+    margin-bottom: 12px;
+    max-width: 85%;
+    line-height: 1.3;
+  }
+  .message.user {
+    align-self: flex-end;
+    background: #007bff;
+    color: white;
+    padding: 8px 12px;
+    border-radius: 15px 15px 0 15px;
+  }
+  .message.bot {
+    align-self: flex-start;
+    background: #e4e6eb;
+    color: #050505;
+    padding: 8px 12px;
+    border-radius: 15px 15px 15px 0;
+    white-space: pre-wrap;
+  }
+  #input-area {
+    display: flex;
+    padding: 10px;
+    border-top: 1px solid #ddd;
+  }
+  #user-input {
+    flex: 1;
+    padding: 8px 12px;
+    font-size: 14px;
+    border: 1px solid #ccc;
+    border-radius: 20px;
+    outline: none;
+  }
+  #send-btn {
+    background: #0055a5;
+    border: none;
+    color: white;
+    padding: 8px 16px;
+    margin-left: 8px;
+    font-weight: bold;
+    border-radius: 20px;
+    cursor: pointer;
+    transition: background 0.3s;
+  }
+  #send-btn:hover {
+    background: #003d7a;
+  }
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    margin-top: 5px;
+  }
+  th, td {
+    border: 1px solid #ccc;
+    padding: 6px;
+    text-align: left;
+    font-size: 13px;
+  }
+  th {
+    background-color: #f2f2f2;
+  }
+  small {
+    color: #555;
+  }
+</style>
 </head>
 <body>
-  <div id="chat-container">
-    <header>Model Engineering College Chatbot</header>
-    <div id="chat-box"></div>
-    <div id="input-area">
-      <input
-        type="text"
-        id="user-input"
-        placeholder="Ask me anything..."
-        autocomplete="off"
-      />
-      <button id="send-btn">Send</button>
-    </div>
-  </div>
 
-  <script src="data.js"></script>
-  <script src="script.js"></script>
+<div id="chat-container">
+  <header>Model Engineering College Chatbot</header>
+  <div id="chat-box"></div>
+  <div id="input-area">
+    <input type="text" id="user-input" placeholder="Ask me anything..." autocomplete="off" />
+    <button id="send-btn">Send</button>
+  </div>
+</div>
+
+<script>
+  // Data embedded inside this file for simplicity
+  const collegeData = {
+    hods: {
+      ECE: "Dr. Jobymol Jacob",
+      CSE: "Dr. Binu V P",
+      EEE: "Dr. Bindu V",
+    },
+    timetables: {
+      S3: {
+        ECE_A: {
+          Monday: [
+            { periods: "1-3", subject: "Lab", batch1: "LCD Lab", batch2: "AC Lab", time: "9:30-12:30" },
+            { period: 4, subject: "Maths", time: "1:30-2:30" },
+            { periods: "5-6", subject: "Minors / Remedial", time: "2:30-4:30" },
+          ],
+          Tuesday: [
+            { periods: "1-2", subject: "AC", time: "9:30-11:30" },
+            { period: 3, subject: "SSD", time: "11:30-12:30" },
+            { periods: "4-5", subject: "LCD", time: "1:30-3:30" },
+          ],
+          Wednesday: [
+            { periods: "1-2", subject: "Maths", time: "9:30-11:30" },
+            { period: 3, subject: "EE", time: "11:30-12:30" },
+            { periods: "4-5", subject: "AC", time: "1:30-3:30" },
+          ],
+          Thursday: [
+            { period: 1, subject: "EE", time: "9:30-10:25" },
+            { period: 2, subject: "SSD", time: "10:35-11:30" },
+            { period: 3, subject: "Minor", time: "11:30-12:30" },
+            { periods: "4-6", subject: "Lab", batch1: "AC Lab", batch2: "LCD Lab", time: "1:30-4:30" },
+          ],
+          Friday: [
+            { period: 1, subject: "LCD", time: "9:30-10:20" },
+            { periods: "2-3", subject: "AI DS", time: "10:30-12:00" },
+            { periods: "4-5", subject: "SSD", time: "2:00-3:40" },
+            { period: 6, subject: "LCD", time: "3:40-4:30" },
+          ],
+        },
+        CSB: {
+          Monday: [
+            { period: 1, subject: "TOC", time: "9:30-10:25" },
+            { period: 2, subject: "EESD", time: "10:35-11:30" },
+            { period: 3, subject: "DSLD", time: "11:30-12:30" },
+            { period: 4, subject: "OOP", time: "1:30-2:30" },
+            { period: 5, subject: "MINOR", time: "2:30-3:30" },
+            { period: 6, subject: "MINOR", time: "3:30-4:30" },
+          ],
+          Tuesday: [
+            { periods: "1-2", subject: "Maths", time: "9:30-11:30" },
+            { period: 3, subject: "OOP", time: "11:30-12:30" },
+            { periods: "4-5", subject: "DSA", time: "1:30-3:30" },
+            { period: 6, subject: "TOC", time: "3:30-4:30" },
+          ],
+          Wednesday: [
+            { periods: "1-3", subject: "Lab", time: "9:30-12:30" },
+            { period: 4, subject: "TOC", time: "1:30-2:30" },
+            { period: 5, subject: "DSLD", time: "2:30-3:30" },
+            { period: 6, subject: "OOP", time: "3:30-4:30" },
+          ],
+          Thursday: [
+            { periods: "1-3", subject: "Lab", time: "9:30-12:30" },
+            { period: 4, subject: "Maths", time: "1:30-2:30" },
+            { period: 5, subject: "EESD", time: "2:30-3:30" },
+            { period: 6, subject: "MINOR", time: "3:30-4:30" },
+          ],
+          Friday: [
+            { period: 1, subject: "TOC", time: "9:30-10:20" },
+            { period: 2, subject: "OOP", time: "10:30-11:10" },
+            { period: 3, subject: "Maths", time: "11:10-12:00" },
+            { periods: "4-5", subject: "DSLS", time: "2:00-3:40" },
+            { period: 6, subject: "MINOR", time: "3:40-4:30" },
+          ],
+        },
+      },
+    },
+    academic_calendar: {
+      Odd_Semester_2025: [
+        { date: "01/07/2025", day: "Tuesday", event: "Commencement of Classes", semesters: ["S3", "S5", "S7"] },
+        { date: "07/07/2025", day: "Monday", event: "Semester Enrollment Begins", semesters: ["S3", "S5", "S7"] },
+        { date: "14/07/2025", day: "Monday", event: "Semester Enrollment Ends", semesters: ["S3", "S5", "S7"] },
+        { date: "16/07/2025", day: "Wednesday", event: "Last date for First Advisory Meeting", semesters: ["S3", "S5", "S7"] },
+        { date: "18/07/2025", day: "Friday", event: "Course Selection and Mapping Begins", semesters: ["S3", "S5", "S7"] },
+        { date: "30/07/2025", day: "Wednesday", event: "Course Selection and Mapping Ends", semesters: ["S3", "S5", "S7"] },
+        { date: "04/08/2025", day: "Monday", event: "Last date for corrections in course selection and mapping on KTU portal", semesters: ["S3", "S5", "S7"] },
+        { date: "05/08/2025", day: "Tuesday", event: "Exam Registration Begins", semesters: ["S3", "S5", "S7"] },
+        { date: "11/08/2025", day: "Monday", event: "Exam Registration Ends (Student Level)", semesters: ["S3", "S5", "S7"] },
+        { date: "18/08/2025", day: "Monday", event: "Exam Registration Ends (College Level Submission)", semesters: ["S3", "S5", "S7"] },
+        { date: "23/08/2025", day: "Saturday", event: "First Series Test to be completed", semesters: ["S3", "S5", "S7"] },
+        { date: "25/08/2025", day: "Monday", event: "KTU Mid Term Survey - Syllabus Coverage", semesters: ["S3", "S5", "S7"] },
+        { date: "09/09/2025", day: "Tuesday", event: "Last date for Second Advisory Meeting", semesters: ["S3", "S5", "S7"] },
+        { date: "11/09/2025", day: "Thursday", event: "Onam Vacation Begins", semesters: ["S3", "S5", "S7"] },
+        { date: "15/10/2025", day: "Wednesday", event: "Second Series Test to be completed", semesters: ["S3", "S5", "S7"] },
+        { date: "16/10/2025", day: "Thursday", event: "KTU Survey (2) - Syllabus Coverage", semesters: ["S3", "S5", "S7"] },
+        { date: "18/10/2025", day: "Saturday", event: "Annual Sports Meet", semesters: ["S3", "S5", "S7"] },
+        { date: "21/10/2025", day: "Tuesday", event: "End Semester Students Feedback (Mandatory)", semesters: ["S3", "S5", "S7"] },
+        { date: "23/10/2025", day: "Thursday", event: "Class Ends. Publish Attendance & IA Marks", semesters: ["S3", "S5", "S7"] },
+        { date: "24/10/2025", day: "Friday", event: "Last date for Entering Attendance on KTU Portal", semesters: ["S3", "S5", "S7"] },
+        { date: "27/10/2025", day: "Monday", event: "Commencement of University Lab Examinations", semesters: ["S3", "S5", "S7"] },
+        { date: "29/10/2025", day: "Wednesday", event: "Last date for Entering Internal Marks on KTU Portal", semesters: ["S3", "S5", "S7"] },
+        { date: "13/11/2025", day: "Thursday", event: "Commencement of End Semester Examination", semesters: ["S3", "S5", "S7"] },
+      ],
+    },
+  };
+
+  const chatBox = document.getElementById("chat-box");
+  const userInput = document.getElementById("user-input");
+  const sendBtn = document.getElementById("send-btn");
+
+  function addMessage(msg, sender, isHTML = false) {
+    const div = document.createElement("div");
+    div.classList.add("message", sender);
+    if (isHTML) div.innerHTML = msg;
+    else div.textContent = msg;
+    chatBox.appendChild(div);
+    chatBox.scrollTop = chatBox.scrollHeight;
+  }
+
+  function formatTimetable(timetable) {
+    let html = `<table>
+      <thead><tr><th>Period(s)</th><th>Subject</th><th>Time</th></tr></thead><tbody>`;
+    timetable.forEach((entry) => {
+      const periods = entry.periods || entry.period || "";
+      let subject = entry.subject;
+      if (entry.batch1 && entry.batch2)
+        subject += `<br><small><em>${entry.batch1} / ${entry.batch2}</em></small>`;
+      html += `<tr><td>${periods}</td><td>${subject}</td><td>${entry.time}</td></tr>`;
+    });
+    html += "</tbody></table>";
+    return html;
+  }
+
+  function normalizeDay(day) {
+    day = day.trim().toLowerCase();
+    return day.charAt(0).toUpperCase() + day.slice(1);
+  }
+
+  function getTimetable(day, batch = "ECE_A") {
+    const normDay = normalizeDay(day);
+
+    if (
+      !collegeData.timetables.S3 ||
+      !collegeData.timetables.S3[batch] ||
+      !collegeData.timetables.S3[batch][normDay]
+    ) {
+      return `No timetable found for ${normDay} in ${batch}.`;
+    }
+    const timetable = collegeData.timetables.S3[batch][normDay];
+    return `<strong>📅 Timetable for ${normDay} (${batch}):</strong>${formatTimetable(
+      timetable
+    )}`;
+  }
+
+  function getTimings(day, batch = "ECE_A") {
+    const normDay = normalizeDay(day);
+    if (
+      !collegeData.timetables.S3 ||
+      !collegeData.timetables.S3[batch] ||
+      !collegeData.timetables.S3[batch][normDay]
+    ) {
+      return `No timings found for ${normDay} in ${batch}.`;
+    }
+    const timetable = collegeData.timetables.S3[batch][normDay];
+    let timings = timetable
+      .map(
+        (entry) =>
+          `${entry.periods || entry.period || ""}: ${entry.time || "N/A"}`
+      )
+      .join("\n");
+    return `<strong>⏰ Timings for ${normDay} (${batch}):</strong><br><pre>${timings}</pre>`;
+  }
+
+  function processInput(text) {
+    const msg = text.toLowerCase().trim();
+
+    // Determine batch: default ECE_A, or CSB if mentioned
+    let batch = "ECE_A";
+    if (msg.includes("csb")) batch = "CSB";
+
+    // Days array for matching
+    const days = ["monday", "tuesday", "wednesday", "thursday", "friday"];
+
+    // Check if any day is mentioned in the input
+    for (const day of days) {
+      if (msg.includes(day)) {
+        // Check if user wants timings specifically
+        if (msg.includes("time") || msg.includes("timing")) {
+          return getTimings(day, batch);
+        }
+        // Otherwise, show timetable
+        return getTimetable(day, batch);
+      }
+    }
+
+    // HOD queries
+    if (msg.includes("hod")) {
+      if (msg.includes("ece")) return `HOD of ECE: ${collegeData.hods.ECE}`;
+      if (msg.includes("cse")) return `HOD of CSE: ${collegeData.hods.CSE}`;
+      if (msg.includes("eee")) return `HOD of EEE: ${collegeData.hods.EEE}`;
+      return "Please specify the department for HOD info (ECE, CSE, EEE).";
+    }
+
+    // Academic calendar query
+    if (msg.includes("academic calendar") || msg.includes("calendar")) {
+      const events = collegeData.academic_calendar?.Odd_Semester_2025;
+      if (!events) return "No academic calendar data available.";
+      let list = events
+        .map(
+          (ev) =>
+            `<li><b>${ev.date} (${ev.day.substring(0, 3)})</b>: ${ev.event}</li>`
+        )
+        .join("");
+      return `<strong>📅 Academic Calendar Events:</strong><ul>${list}</ul>`;
+    }
+
+    return "Sorry, I didn't understand that. Try asking about your timetable, HOD, or academic calendar.";
+  }
+
+  function sendMessage() {
+    const text = userInput.value.trim();
+    if (!text) return;
+    addMessage(text, "user");
+    userInput.value = "";
+
+    setTimeout(() => {
+      const reply = processInput(text);
+      addMessage(reply, "bot", true);
+    }, 400);
+  }
+
+  sendBtn.addEventListener("click", sendMessage);
+
+  userInput.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      sendMessage();
+    }
+  });
+</script>
+
 </body>
 </html>
