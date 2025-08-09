@@ -14,7 +14,6 @@ function formatTimetableTable(timetable) {
   timetable.forEach(entry => {
     let periods = entry.periods || entry.period || "";
     let subject = entry.subject;
-    // If lab with batches info, show both batches separated
     if (entry.batch1 && entry.batch2) {
       subject += `<br/><small><em>${entry.batch1} / ${entry.batch2}</em></small>`;
     }
@@ -64,8 +63,11 @@ function getAcademicEvents() {
 }
 
 function getExamDates() {
-  // Placeholder if exam_dates is empty
-  return "Exam dates are not available yet.";
+  if (!collegeData.exam_dates || Object.keys(collegeData.exam_dates).length === 0) {
+    return "Exam dates are not available yet.";
+  }
+  // Add logic here if exam dates exist
+  return "Exam dates data coming soon!";
 }
 
 function processMessage(msg) {
@@ -81,52 +83,4 @@ function processMessage(msg) {
   if (msg.includes("timing") || msg.includes("time slots") || msg.includes("period times")) {
     for (const day of days) {
       if (msg.includes(day)) {
-        return getTimings(day.charAt(0).toUpperCase() + day.slice(1), batch);
-      }
-    }
-  }
-
-  for (const day of days) {
-    if (msg.includes(day)) {
-      return getTimetable(day.charAt(0).toUpperCase() + day.slice(1), batch);
-    }
-  }
-
-  if (msg.includes("hod")) {
-    if (msg.includes("ece")) return getHOD("ECE");
-    if (msg.includes("cse") || msg.includes("cs")) return getHOD("CSE");
-    if (msg.includes("eee")) return getHOD("EEE");
-    return "Please specify department (ECE, CSE, EEE) for HOD info.";
-  }
-
-  if (msg.includes("academic") || msg.includes("calendar") || msg.includes("events")) {
-    return getAcademicEvents();
-  }
-
-  if (msg.includes("exam")) {
-    return getExamDates();
-  }
-
-  return "Hi! Ask me about your timetable (ECE_A or CSB), HODs, academic calendar, or exams. How can I help?";
-}
-
-function sendMessage() {
-  const inputBox = document.getElementById("user-input");
-  const userText = inputBox.value.trim();
-  if (!userText) return;
-
-  addMessage(userText, "user");
-  inputBox.value = "";
-
-  setTimeout(() => {
-    const reply = processMessage(userText);
-    // If reply contains HTML tags, send as HTML, else plain text
-    const isHTML = /<\/?[a-z][\s\S]*>/i.test(reply);
-    addMessage(reply, "bot", isHTML);
-  }, 500);
-}
-
-document.getElementById("send-btn").addEventListener("click", sendMessage);
-document.getElementById("user-input").addEventListener("keydown", e => {
-  if (e.key === "Enter") sendMessage();
-});
+        return getTimings(day.charAt(0).toUpperCase()
